@@ -1,61 +1,112 @@
 package com.accountomation.acareader.dao;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map.Entry;
 
 import com.accountomation.acareader.model.ACAStatus;
 import com.accountomation.acareader.model.DateMap;
 import com.accountomation.acareader.model.Employee;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 
 public class ACAService {
 
-	@SuppressWarnings("deprecation")
 	public static void createACA(InputStream file) throws IOException {
 		
-		for(int i = 0; i < 946; i += 5 ) {
+		InputStreamReader stream = new InputStreamReader(file);
+		CSVReader reader = new CSVReader(stream);
+		CSVWriter writer = new CSVWriter(Files.newBufferedWriter(Paths.get("C:/Users/Rob Quatela/Desktop/test.csv")),
+				CSVWriter.DEFAULT_SEPARATOR,
+				CSVWriter.NO_QUOTE_CHARACTER,
+				CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+				CSVWriter.DEFAULT_LINE_END
+				);
+		List<String[]> csv = reader.readAll();
+		List<String[]> writtenLines = new ArrayList<>();
+		//for(int i = 5; i < csv.size(); i += 5 ) {
+		int i = 0;
+		while(i < csv.size()) {
 			Employee emp = new Employee();
-			List<DateMap> dates = new ArrayList<>();
-			dates.add(new DateMap(201701));
-			dates.add(new DateMap(201702));
-			dates.add(new DateMap(201703));
-			dates.add(new DateMap(201704));
-			dates.add(new DateMap(201705));
-			dates.add(new DateMap(201706));
-			dates.add(new DateMap(201707));
-			dates.add(new DateMap(201708));
-			dates.add(new DateMap(201709));
-			dates.add(new DateMap(201710));
-			dates.add(new DateMap(201711));
-			dates.add(new DateMap(201712));
-			List<ACAStatus> status = new ArrayList<>();
-			ACAStatus s = new ACAStatus();
-			try (CSVReader reader = new CSVReader(new InputStreamReader(file), ';', '\'', i)) {
+			LinkedHashMap<Integer, ACAStatus> statuses = new LinkedHashMap<>();
+			for(int t = 201701; t < 201713; t++)
+				statuses.put(t, new ACAStatus());
+
+			//CSVReader reader = new CSVReaderBuilder(stream).withSkipLines(i).build();
 				String[] nextLine;
-				nextLine = reader.readNext();
+				nextLine = csv.get(i);
 				emp.setId(nextLine[0]);
-				s.setSeries1(nextLine[5]);
-				reader.readNext();
-				//s.setempshare(nextline)
-				reader.readNext();
-				//s.setseries2(nextline)
-				reader.readNext();
-				//ss.setenrolled(nextLine)
-				reader.readNext();
-				//s.setentity(nextline)		
-			}
+				int counter = 0;
+				
+				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
+					entry.getValue().setDate(new DateMap(entry.getKey()));
+					entry.getValue().setEmp(new Employee(nextLine[0]));
+					entry.getValue().setSeries1(nextLine[counter + 6]);
+					counter++;
+				}
+				
+				counter = 0;
+				nextLine = csv.get(i + 1);
+				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
+					entry.getValue().setEmpShare(nextLine[counter + 6]);
+					counter++;
+				}
+				
+				counter = 0;
+				nextLine = csv.get(i + 2);
+				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
+					entry.getValue().setSeries2(nextLine[counter + 6]);
+					counter++;
+				}
+				
+				counter = 0;
+				nextLine = csv.get(i + 3);
+				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
+					entry.getValue().setEnrolledInSelf(nextLine[counter + 6]);
+					counter++;
+				}
+				
+				counter = 0;
+				nextLine = csv.get(i + 4);
+				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
+					entry.getValue().setEntity(nextLine[counter + 6]);
+					counter++;
+				}
+				
+				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
+					System.out.println("Emp: " + entry.getValue().getEmp().getId() + 
+							" Month: " + entry.getValue().getDate().getId() +
+							" Series1: " + entry.getValue().getSeries1() +
+							" Series2: " + entry.getValue().getSeries2() +
+							" Empshare: " + entry.getValue().getEmpShare() +
+							" enrolled: " + entry.getValue().getEnrolledInSelf() +
+							" entity: " + entry.getValue().getEntity());
+					writtenLines.add(new String[] {
+							entry.getValue().getEmp().getId(),
+							String.valueOf(entry.getValue().getDate().getId()),
+							entry.getValue().getSeries1(),
+							entry.getValue().getEmpShare(),
+							entry.getValue().getEnrolledInSelf(),
+							entry.getValue().getSeries2(),
+							entry.getValue().getEnrolledInSelf()
+					});
+				}
 			
-			for(DateMap date : dates) {
-				//status.setdate(date)
-				status.add(s);
-			}
+				
+			i += 5;
 			
-			for(ACAStatus stat : status) {
-				//insert each one
-			}
 		}
+		
+		reader.close();
+		for(String[] line : writtenLines)
+			writer.writeNext(line);
+		writer.close();
 	}
 }
