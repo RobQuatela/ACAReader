@@ -1,6 +1,5 @@
 package com.accountomation.acareader.dao;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -19,11 +18,12 @@ import com.opencsv.CSVWriter;
 
 public class ACAService {
 
-	public static void createACA(InputStream file) throws IOException {
+	public static int[] createACA(InputStream file) throws IOException {
 		
 		InputStreamReader stream = new InputStreamReader(file);
 		CSVReader reader = new CSVReader(stream);
-		CSVWriter writer = new CSVWriter(Files.newBufferedWriter(Paths.get("C:/Users/Rob Quatela/Desktop/test.csv")),
+		CSVWriter writer = new CSVWriter(Files.newBufferedWriter(
+				Paths.get("C:/Users/Rob Quatela/Desktop/ACA Series Codes Import.csv")),
 				CSVWriter.DEFAULT_SEPARATOR,
 				CSVWriter.NO_QUOTE_CHARACTER,
 				CSVWriter.DEFAULT_ESCAPE_CHARACTER,
@@ -31,8 +31,20 @@ public class ACAService {
 				);
 		List<String[]> csv = reader.readAll();
 		List<String[]> writtenLines = new ArrayList<>();
-		//for(int i = 5; i < csv.size(); i += 5 ) {
+		
+		writtenLines.add(new String[] {
+				"Employee Identifier",
+				" ",
+				"Date (YYYMM Format - Leaving month blank applies to all current year)",
+				" ",
+				"Series Code 1 (1A - 1I)",
+				"Employee Share (Up to 2 decimals)",
+				"Series Code 2 (2A - 2I)",
+				"Enrolled in self coverage (1 - checked 0 - not checked)"
+		});
+
 		int i = 0;
+		
 		while(i < csv.size()) {
 			Employee emp = new Employee();
 			LinkedHashMap<Integer, ACAStatus> statuses = new LinkedHashMap<>();
@@ -46,8 +58,10 @@ public class ACAService {
 				int counter = 0;
 				
 				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
+					String[] formatter = nextLine[0].split("\\(");
+					String name = formatter[1].substring(0, 4);
 					entry.getValue().setDate(new DateMap(entry.getKey()));
-					entry.getValue().setEmp(new Employee(nextLine[0]));
+					entry.getValue().setEmp(new Employee(name));
 					entry.getValue().setSeries1(nextLine[counter + 6]);
 					counter++;
 				}
@@ -69,7 +83,7 @@ public class ACAService {
 				counter = 0;
 				nextLine = csv.get(i + 3);
 				for(Entry<Integer, ACAStatus> entry : statuses.entrySet()) {
-					entry.getValue().setEnrolledInSelf(nextLine[counter + 6]);
+					entry.getValue().setEnrolledInSelf("0");
 					counter++;
 				}
 				
@@ -90,10 +104,14 @@ public class ACAService {
 							" entity: " + entry.getValue().getEntity());
 					writtenLines.add(new String[] {
 							entry.getValue().getEmp().getId(),
+							" ",
 							String.valueOf(entry.getValue().getDate().getId()),
+							entry.getValue().getSeries1() + "|"
+									+ entry.getValue().getEmpShare() + "|"
+									+ entry.getValue().getSeries2() + "|"
+									+ entry.getValue().getEnrolledInSelf(),
 							entry.getValue().getSeries1(),
 							entry.getValue().getEmpShare(),
-							entry.getValue().getEnrolledInSelf(),
 							entry.getValue().getSeries2(),
 							entry.getValue().getEnrolledInSelf()
 					});
@@ -108,5 +126,8 @@ public class ACAService {
 		for(String[] line : writtenLines)
 			writer.writeNext(line);
 		writer.close();
+		int[] processedLines = new int[] {writtenLines.size(), i};
+		
+		return processedLines;
 	}
 }

@@ -41,12 +41,15 @@ public class UploadController extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		List<Part> fileParts = request.getParts().stream().filter(parts -> "uploadFile".equals(parts.getName())).collect(Collectors.toList());
-		String list = request.getParameter("lstReport");
+		int[] processed = null;
 		
 		for(Part part : fileParts) {
 			InputStream file = part.getInputStream();
-			ACAService.createACA(file);
+			processed = ACAService.createACA(file);
 		}
+		
+		request.setAttribute("processed", processed);
+		doGet(request, response);
 	}
 
 }
